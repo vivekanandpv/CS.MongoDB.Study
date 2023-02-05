@@ -1,4 +1,5 @@
 ﻿using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Driver;
 
 namespace CS.MongoDB.Study
@@ -17,18 +18,40 @@ namespace CS.MongoDB.Study
             var mongoSampleDb = client.GetDatabase("mongo-sample");
 
             //  Getting the collection
-            var personsCollection = mongoSampleDb.GetCollection<BsonDocument>("persons");
+            var personsCollection = mongoSampleDb.GetCollection<Person>("persons");
 
-            //  Creating a filter
-            var filter = Builders<BsonDocument>.Filter.Eq("city", "Bengaluru");
-            
+            //  For type-safe collections, the external filters do not work; This is LINQ!
             //  Getting the cursor
-            var cursor = await personsCollection.FindAsync(filter);
+            var cursor = await personsCollection.FindAsync(p => p.FirstName.StartsWith("Vivek"));
 
             //  Getting the first matching document
             var document = await cursor.FirstAsync();
 
             Console.WriteLine(document);
+        }
+    }
+
+    
+
+    //  Model class
+    class Person
+    {
+        //  This is a document identifier. As such this is required
+        [BsonId]
+        public ObjectId _id { get; set; }
+
+        [BsonElement("firstName")]
+        public string FirstName { get; set; }
+
+        [BsonElement("lastName")]
+        public string LastName { get; set; }
+
+        [BsonElement("city")]
+        public string City { get; set; }
+
+        public override string ToString()
+        {
+            return $"FirstName: {FirstName}; LastName: {LastName}; City: {City}";
         }
     }
 }
