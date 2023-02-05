@@ -1,6 +1,7 @@
 ﻿using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Driver;
+using MongoDB.Driver.Linq;
 
 namespace CS.MongoDB.Study
 {
@@ -20,14 +21,30 @@ namespace CS.MongoDB.Study
             //  Getting the collection
             var personsCollection = mongoSampleDb.GetCollection<Person>("persons");
 
-            //  For type-safe collections, the external filters do not work; This is LINQ!
-            //  Getting the cursor
-            var cursor = await personsCollection.FindAsync(p => p.FirstName.StartsWith("Vivek"));
+            //  Creating a new document
+            var person = new Person
+            {
+                FirstName = "Manish",
+                LastName = "T",
+                City = "Pune"
+            };
 
-            //  Getting the first matching document
-            var document = await cursor.FirstAsync();
+            //  Inserting a document to the collection
+            await personsCollection.InsertOneAsync(person);
 
-            Console.WriteLine(document);
+            //  Till date, there is no API in MongoDB driver to get all documents
+            //  The nearest is personsCollection.FindAsync(_ => true) which returns a cursor
+            //  It's easier to use the AsQueryable() which returns IQueryable<T>
+            //  for Linq related operations
+            var nDocuments = await personsCollection.AsQueryable().CountAsync();
+
+            //  Queryable can be used for searching
+            //  Perhaps a better approach would be to relegate it to the driver
+            //  with personsCollection.FindAsync(...)
+            var pDoc = await personsCollection.AsQueryable().FirstAsync(p => p.City == "Pune");
+
+            Console.WriteLine($"Currently we have {nDocuments} documents");
+            Console.WriteLine(pDoc);
         }
     }
 
