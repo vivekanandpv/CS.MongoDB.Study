@@ -19,19 +19,16 @@ namespace CS.MongoDB.Study
             //  Getting the collection
             var personsCollection = mongoSampleDb.GetCollection<BsonDocument>("persons");
 
+            //  Creating a filter
+            var filter = Builders<BsonDocument>.Filter.Eq("city", "Bengaluru");
+            
             //  Getting the cursor
-            var cursor = await personsCollection.FindAsync(p => p["firstName"].AsString.StartsWith("Vivek"));
+            var cursor = await personsCollection.FindAsync(filter);
 
             //  Getting the first matching document
             var document = await cursor.FirstAsync();
 
             Console.WriteLine(document);
-
-            //  Iterating through cursor
-            await cursor.ForEachAsync((d, i) =>
-            {
-                Console.WriteLine($"{i} --> {d}");
-            });
         }
     }
 }
