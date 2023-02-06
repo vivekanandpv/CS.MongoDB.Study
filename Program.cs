@@ -5,10 +5,7 @@ using MongoDB.Driver.Linq;
 
 namespace CS.MongoDB.Study
 {
-    //  Create a database called mongo-sample
-    //  In mongo-sample create a collection calle persons
-    //  In persons collection, insert a document through MongoDb Compass
-    //  with: firstName, lastName, city (all strings)
+    //  In the mongo-sample database, create a new collection called books
     internal class Program
     {
         static async Task Main(string[] args)
@@ -19,56 +16,79 @@ namespace CS.MongoDB.Study
             var mongoSampleDb = client.GetDatabase("mongo-sample");
 
             //  Getting the collection
-            var personsCollection = mongoSampleDb.GetCollection<Person>("persons");
+            var booksCollections = mongoSampleDb.GetCollection<Book>("books");
 
-            //  Creating a new document
-            var person = new Person
+            //  Creating a complex aggregate
+            var book = new Book
             {
-                FirstName = "Manish",
-                LastName = "T",
-                City = "Pune"
+                Title = "The C# Programming Language",
+                Authors = new[] { "Anders Heijlsberg", "Eric Lippert" },
+                Dimensions = new Dimensions
+                {
+                    Length = 160,
+                    Width = 130,
+                    Thickness = 45
+                },
+                Pages = 800,
+                Price = 928.50,
+                YearOfPublication = 2010
             };
 
-            //  Inserting a document to the collection
-            await personsCollection.InsertOneAsync(person);
+            await booksCollections.InsertOneAsync(book);
 
-            //  Till date, there is no API in MongoDB driver to get all documents
-            //  The nearest is personsCollection.FindAsync(_ => true) which returns a cursor
-            //  It's easier to use the AsQueryable() which returns IQueryable<T>
-            //  for Linq related operations
-            var nDocuments = await personsCollection.AsQueryable().CountAsync();
+            //  _id is allocated
+            Console.WriteLine(book._id);
 
-            //  Queryable can be used for searching
-            //  Perhaps a better approach would be to relegate it to the driver
-            //  with personsCollection.FindAsync(...)
-            var pDoc = await personsCollection.AsQueryable().FirstAsync(p => p.City == "Pune");
-
-            Console.WriteLine($"Currently we have {nDocuments} documents");
-            Console.WriteLine(pDoc);
+            var cursor = await booksCollections.FindAsync(b => b._id == book._id);
+            
+            //  returns the newly created book
+            var bookDb = await cursor.FirstAsync();
+            
+            //  Updating. Take a look at the result
+            var result = await booksCollections.UpdateOneAsync(
+                b => b._id == book._id, 
+                Builders<Book>.Update.Set(b => b.Pages, 900)
+                );
         }
     }
 
     
 
     //  Model class
-    class Person
+    class Book
     {
         //  This is a document identifier. As such this is required
         [BsonId]
         public ObjectId _id { get; set; }
 
-        [BsonElement("firstName")]
-        public string FirstName { get; set; }
+        [BsonElement("title")]
+        public string Title { get; set; }
 
-        [BsonElement("lastName")]
-        public string LastName { get; set; }
+        [BsonElement("pages")]
+        public int Pages { get; set; }
 
-        [BsonElement("city")]
-        public string City { get; set; }
+        [BsonElement("authors")]
+        public string[] Authors { get; set; }
 
-        public override string ToString()
-        {
-            return $"FirstName: {FirstName}; LastName: {LastName}; City: {City}";
-        }
+        [BsonElement("price")]
+        public double Price { get; set; }
+
+        [BsonElement("yearOfPublication")]
+        public int YearOfPublication { get; set; }
+
+        [BsonElement("dimensions")]
+        public Dimensions Dimensions { get; set; }
+    }
+
+    public class Dimensions
+    {
+        [BsonElement("length")]
+        public int Length { get; set; }
+
+        [BsonElement("width")]
+        public int Width { get; set; }
+
+        [BsonElement("thickness")]
+        public int Thickness { get; set; }
     }
 }
